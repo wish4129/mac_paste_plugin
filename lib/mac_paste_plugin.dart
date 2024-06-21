@@ -63,7 +63,6 @@ Future<void> start() async {
   } on PlatformException catch (e) {
     if (e.code == 'PERMISSION_DENIED') {
       print('MacPastePlugin: Input Monitoring permission not granted. Please enable it in System Preferences.');
-      // You might want to show a dialog to the user here explaining how to enable the permission
     } else {
       print('MacPastePlugin: Failed to start Cmd+V watcher: ${e.message}');
     }
