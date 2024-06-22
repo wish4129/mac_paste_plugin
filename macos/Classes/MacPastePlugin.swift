@@ -5,8 +5,8 @@ public class MacPastePlugin: NSObject, FlutterPlugin {
   static var channel: FlutterMethodChannel?
 
   public static func register(with registrar: FlutterPluginRegistrar) {
-        channel = FlutterMethodChannel(name: "com.example/macos_paste_plugin", binaryMessenger: registrar.messenger)
-        let instance = MacOsPastePlugin()
+        channel = FlutterMethodChannel(name: "xionapps.com/mac_paste_plugin", binaryMessenger: registrar.messenger)
+        let instance = MacPastePlugin()
         registrar.addMethodCallDelegate(instance, channel: channel!)
         
         NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { (event) in
@@ -30,7 +30,7 @@ public class MacPastePlugin: NSObject, FlutterPlugin {
             }
         case "simulatePasteEvent":
             if let content = call.arguments as? String {
-                MacOsPastePlugin.channel?.invokeMethod("onPaste", arguments: content)
+                MacPastePlugin.channel?.invokeMethod("onPaste", arguments: content)
                 result(nil)
             } else {
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected string argument", details: nil))

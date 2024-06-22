@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 class MacPastePlugin {
   static const MethodChannel _channel =
-      MethodChannel('com.example/macos_paste_plugin');
+      MethodChannel('xionapps.com/mac_paste_plugin');
   static Function(String)? onPaste;
 
   static Future<void> initialize() async {

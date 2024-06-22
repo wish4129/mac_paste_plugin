@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mac_paste_plugin/mac_paste_plugin.dart';
 
 void main() {
-  const MethodChannel channel = MethodChannel('com.example/macos_paste_plugin');
+  const MethodChannel channel = MethodChannel('xionapps.com/mac_paste_plugin');
 
   TestWidgetsFlutterBinding.ensureInitialized();
 
