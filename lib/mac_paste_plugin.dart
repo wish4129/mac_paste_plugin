@@ -1,4 +1,4 @@
-// File: lib/paste_watcher.dart
+// File: lib/mac_paste_plugin.dart
 import 'dart:async';
 
 import 'package:flutter/services.dart';
@@ -18,63 +18,70 @@ class MacPastePlugin {
     try {
       switch (call.method) {
         case 'onPaste':
-          print('Cmd+V event received in Dart');
+          print('MacPastePlugin: Cmd+V event received in Dart');
           _notifyListeners();
           return true;
         default:
-          print('Unimplemented method ${call.method}');
+          print('MacPastePlugin: Unimplemented method ${call.method}');
           return null;
       }
     } catch (e, stackTrace) {
-      print('Error in _methodCallHandler: $e');
-      print('Stack trace: $stackTrace');
+      print('MacPastePlugin: Error in _methodCallHandler: $e');
+      print('MacPastePlugin: Stack trace: $stackTrace');
       return null;
     }
   }
 
   void _notifyListeners() {
-    print('Notifying listeners of Cmd+V event');
+    print('MacPastePlugin: Notifying listeners of Cmd+V event');
     for (final VoidCallback listener in _listeners) {
       try {
         listener();
       } catch (e, stackTrace) {
-        print('Error notifying listener: $e');
-        print('Stack trace: $stackTrace');
+        print('MacPastePlugin: Error notifying listener: $e');
+        print('MacPastePlugin: Stack trace: $stackTrace');
       }
     }
   }
 
   void addListener(VoidCallback listener) {
     _listeners.add(listener);
-    print('Listener added. Total listeners: ${_listeners.length}');
+    print(
+        'MacPastePlugin: Listener added. Total listeners: ${_listeners.length}');
   }
 
   void removeListener(VoidCallback listener) {
     _listeners.remove(listener);
-    print('Listener removed. Total listeners: ${_listeners.length}');
+    print(
+        'MacPastePlugin: Listener removed. Total listeners: ${_listeners.length}');
   }
 
-  Future<void> start() async {
-    try {
-      final bool? result = await _channel.invokeMethod<bool?>('start');
-      print('Cmd+V watcher started: $result');
-    } on PlatformException catch (e) {
-      print('Failed to start Cmd+V watcher: ${e.message}');
-    } catch (e, stackTrace) {
-      print('Unexpected error starting Cmd+V watcher: $e');
-      print('Stack trace: $stackTrace');
+Future<void> start() async {
+  try {
+    final bool? result = await _channel.invokeMethod<bool?>('start');
+    print('MacPastePlugin: Cmd+V watcher started: $result');
+  } on PlatformException catch (e) {
+    if (e.code == 'PERMISSION_DENIED') {
+      print('MacPastePlugin: Input Monitoring permission not granted. Please enable it in System Preferences.');
+      // You might want to show a dialog to the user here explaining how to enable the permission
+    } else {
+      print('MacPastePlugin: Failed to start Cmd+V watcher: ${e.message}');
     }
+  } catch (e, stackTrace) {
+    print('MacPastePlugin: Unexpected error starting Cmd+V watcher: $e');
+    print('MacPastePlugin: Stack trace: $stackTrace');
   }
+}
 
   Future<void> stop() async {
     try {
       final bool? result = await _channel.invokeMethod<bool?>('stop');
-      print('Cmd+V watcher stopped: $result');
+      print('MacPastePlugin: Cmd+V watcher stopped: $result');
     } on PlatformException catch (e) {
-      print('Failed to stop Cmd+V watcher: ${e.message}');
+      print('MacPastePlugin: Failed to stop Cmd+V watcher: ${e.message}');
     } catch (e, stackTrace) {
-      print('Unexpected error stopping Cmd+V watcher: $e');
-      print('Stack trace: $stackTrace');
+      print('MacPastePlugin: Unexpected error stopping Cmd+V watcher: $e');
+      print('MacPastePlugin: Stack trace: $stackTrace');
     }
   }
 }

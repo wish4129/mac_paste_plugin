@@ -1,4 +1,4 @@
-// File: macos/Classes/PasteWatcherPlugin.swift
+// File: macos/Classes/MacPastePlugin.swift
 import Cocoa
 import FlutterMacOS
 
@@ -25,37 +25,36 @@ public class MacPastePlugin: NSObject, FlutterPlugin {
     }
     
     private func start(result: @escaping FlutterResult) {
-        if monitor == nil {
-            NSLog("Starting Cmd+V watcher")
-            monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "v" {
-                    NSLog("Cmd+V detected")
-                    DispatchQueue.main.async {
-                        self?.channel.invokeMethod("onPaste", arguments: nil) { result in
-                            if let error = result as? FlutterError {
-                                NSLog("Error sending Cmd+V event to Flutter: \(error.message ?? "Unknown error")")
-                            } else {
-                                NSLog("Cmd+V event sent to Flutter successfully")
-                            }
-                        }
-                    }
-                }
-            }
-            result(true)
-        } else {
-            NSLog("Cmd+V watcher already running")
-            result(FlutterError(code: "ALREADY_RUNNING", message: "Cmd+V watcher is already running", details: nil))
+    if monitor == nil {
+        NSLog("MacPastePlugin: Checking for permissions")
+        let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String : true]
+        let accessEnabled = AXIsProcessTrustedWithOptions(options)
+        
+        if !accessEnabled {
+            NSLog("MacPastePlugin: Input Monitoring permission not granted")
+            result(FlutterError(code: "PERMISSION_DENIED", message: "Input Monitoring permission not granted", details: nil))
+            return
         }
+        
+        NSLog("MacPastePlugin: Starting Cmd+V watcher")
+        monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            // ... rest of the code ...
+        }
+        result(true)
+    } else {
+        NSLog("MacPastePlugin: Cmd+V watcher already running")
+        result(FlutterError(code: "ALREADY_RUNNING", message: "Cmd+V watcher is already running", details: nil))
     }
+}
     
     private func stop(result: @escaping FlutterResult) {
         if let monitor = monitor {
-            NSLog("Stopping Cmd+V watcher")
+            NSLog("MacPastePlugin: Stopping Cmd+V watcher")
             NSEvent.removeMonitor(monitor)
             self.monitor = nil
             result(true)
         } else {
-            NSLog("Cmd+V watcher not running")
+            NSLog("MacPastePlugin: Cmd+V watcher not running")
             result(FlutterError(code: "NOT_RUNNING", message: "Cmd+V watcher is not running", details: nil))
         }
     }
