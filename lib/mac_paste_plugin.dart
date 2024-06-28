@@ -56,21 +56,60 @@ class MacPastePlugin {
         'MacPastePlugin: Listener removed. Total listeners: ${_listeners.length}');
   }
 
-Future<void> start() async {
-  try {
-    final bool? result = await _channel.invokeMethod<bool?>('start');
-    print('MacPastePlugin: Cmd+V watcher started: $result');
-  } on PlatformException catch (e) {
-    if (e.code == 'PERMISSION_DENIED') {
-      print('MacPastePlugin: Input Monitoring permission not granted. Please enable it in System Preferences.');
-    } else {
-      print('MacPastePlugin: Failed to start Cmd+V watcher: ${e.message}');
+  Future<bool> checkPermission() async {
+    try {
+      final bool? hasPermission =
+          await _channel.invokeMethod<bool>('checkPermission');
+      return hasPermission ?? false;
+    } on PlatformException catch (e) {
+      print(
+          'MacPastePlugin: PlatformException checking permission: ${e.message}');
+      return false;
+    } catch (e) {
+      print('MacPastePlugin: Error checking permission: $e');
+      return false;
     }
-  } catch (e, stackTrace) {
-    print('MacPastePlugin: Unexpected error starting Cmd+V watcher: $e');
-    print('MacPastePlugin: Stack trace: $stackTrace');
   }
-}
+
+  Future<bool> requestPermission() async {
+    try {
+      final bool? granted =
+          await _channel.invokeMethod<bool>('requestPermission');
+      return granted ?? false;
+    } on PlatformException catch (e) {
+      print(
+          'MacPastePlugin: PlatformException requesting permission: ${e.message}');
+      return false;
+    } catch (e) {
+      print('MacPastePlugin: Error requesting permission: $e');
+      return false;
+    }
+  }
+
+  Future<void> start() async {
+    try {
+      bool hasPermission = await checkPermission();
+
+      if (!hasPermission) {
+        print('MacPastePlugin: Requesting input monitoring permission...');
+        hasPermission = await requestPermission();
+      }
+
+      if (hasPermission) {
+        final bool? result = await _channel.invokeMethod<bool?>('start');
+        print('MacPastePlugin: Cmd+V watcher started: $result');
+      } else {
+        print('MacPastePlugin: Input monitoring permission denied');
+        // You might want to show a dialog to the user here explaining why the permission is needed
+        // and how to enable it in System Preferences
+      }
+    } on PlatformException catch (e) {
+      print('MacPastePlugin: PlatformException: ${e.message}');
+    } catch (e, stackTrace) {
+      print('MacPastePlugin: Unexpected error starting Cmd+V watcher: $e');
+      print('MacPastePlugin: Stack trace: $stackTrace');
+    }
+  }
 
   Future<void> stop() async {
     try {
