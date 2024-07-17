@@ -1,45 +1,62 @@
+// File: macos/Classes/MacPastePlugin.swift
+import Cocoa
 import FlutterMacOS
-import Foundation
-import AppKit
 
 public class MacPastePlugin: NSObject, FlutterPlugin {
+    private var channel: FlutterMethodChannel!
+    private var monitor: Any?
+    
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "mac_paste_plugin", binaryMessenger: registrar.messenger)
         let instance = MacPastePlugin()
+        instance.channel = channel
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
-
+    
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
-        case "checkPermission":
-            result(checkInputMonitoringPermission())
-        case "requestPermission":
-            requestInputMonitoringPermission { granted in
-                result(granted)
-            }
         case "start":
-            // Implement your start logic here
-            result(true)  // Replace with actual implementation
+            start(result: result)
         case "stop":
-            // Implement your stop logic here
-            result(true)  // Replace with actual implementation
+            stop(result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
     }
-
-    private func checkInputMonitoringPermission() -> Bool {
-        return AXIsProcessTrusted()
+    
+    private func start(result: @escaping FlutterResult) {
+        if monitor == nil {
+            NSLog("Starting Cmd+V watcher")
+            monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "v" {
+                    NSLog("Cmd+V detected")
+                    DispatchQueue.main.async {
+                        self?.channel.invokeMethod("onPaste", arguments: nil) { result in
+                            if let error = result as? FlutterError {
+                                NSLog("Error sending Cmd+V event to Flutter: \(error.message ?? "Unknown error")")
+                            } else {
+                                NSLog("Cmd+V event sent to Flutter successfully")
+                            }
+                        }
+                    }
+                }
+            }
+            result(true)
+        } else {
+            NSLog("Cmd+V watcher already running")
+            result(FlutterError(code: "ALREADY_RUNNING", message: "Cmd+V watcher is already running", details: nil))
+        }
     }
-
-    private func requestInputMonitoringPermission(completion: @escaping (Bool) -> Void) {
-        let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-        AXIsProcessTrustedWithOptions(options)
-        
-        // Since the permission prompt is asynchronous, we need to wait a bit before checking the result
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            let granted = AXIsProcessTrusted()
-            completion(granted)
+    
+    private func stop(result: @escaping FlutterResult) {
+        if let monitor = monitor {
+            NSLog("Stopping Cmd+V watcher")
+            NSEvent.removeMonitor(monitor)
+            self.monitor = nil
+            result(true)
+        } else {
+            NSLog("Cmd+V watcher not running")
+            result(FlutterError(code: "NOT_RUNNING", message: "Cmd+V watcher is not running", details: nil))
         }
     }
 }
