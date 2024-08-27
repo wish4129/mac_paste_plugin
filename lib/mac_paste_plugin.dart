@@ -18,7 +18,6 @@ class MacPastePlugin {
     try {
       switch (call.method) {
         case 'onPaste':
-          print('Cmd+V event received in Dart');
           _notifyListeners();
           return true;
         default:
@@ -33,7 +32,6 @@ class MacPastePlugin {
   }
 
   void _notifyListeners() {
-    print('Notifying listeners of Cmd+V event');
     for (final VoidCallback listener in _listeners) {
       try {
         listener();
@@ -89,7 +87,8 @@ class MacPastePlugin {
 
   Future<bool> requestPermission() async {
     try {
-      final bool? result = await _channel.invokeMethod<bool?>('requestPermission');
+      final bool? result =
+          await _channel.invokeMethod<bool?>('requestPermission');
       print('Permission request result: $result');
       return result ?? false;
     } on PlatformException catch (e) {
