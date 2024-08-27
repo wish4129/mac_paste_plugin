@@ -34,12 +34,16 @@ public class MacPastePlugin: NSObject, FlutterPlugin {
                 if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "v" {
                     NSLog("Cmd+V detected")
                     DispatchQueue.main.async {
-                        self?.channel.invokeMethod("onPaste", arguments: nil) { result in
-                            if let error = result as? FlutterError {
-                                NSLog("Error sending Cmd+V event to Flutter: \(error.message ?? "Unknown error")")
-                            } else {
-                                NSLog("Cmd+V event sent to Flutter successfully")
+                        if let clipboardContent = NSPasteboard.general.string(forType: .string) {
+                            self?.channel.invokeMethod("onPaste", arguments: clipboardContent) { result in
+                                if let error = result as? FlutterError {
+                                    NSLog("Error sending Cmd+V event to Flutter: \(error.message ?? "Unknown error")")
+                                } else {
+                                    NSLog("Cmd+V event sent to Flutter successfully")
+                                }
                             }
+                        } else {
+                            NSLog("No text content in clipboard")
                         }
                     }
                 }
