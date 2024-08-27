@@ -61,7 +61,6 @@ class MacPastePlugin {
       }
 
       final bool? result = await _channel.invokeMethod<bool?>('start');
-      print('Cmd+V watcher started: $result');
       return result ?? false;
     } on PlatformException catch (e) {
       print('Failed to start Cmd+V watcher: ${e.message}');
