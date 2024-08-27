@@ -3,10 +3,6 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 
-abstract class MacPasteDelegate {
-  void onPaste(String clipboardData);
-}
-
 class MacPastePlugin {
   static final MacPastePlugin instance = MacPastePlugin._();
 
@@ -15,14 +11,14 @@ class MacPastePlugin {
   }
 
   final MethodChannel _channel = const MethodChannel('mac_paste_plugin');
-  MacPasteDelegate? _delegate;
+  final ObserverList<void Function(String)> _listeners = ObserverList<void Function(String)>();
 
   Future<dynamic> _methodCallHandler(MethodCall call) async {
     try {
       switch (call.method) {
         case 'onPaste':
           final String clipboardData = call.arguments as String;
-          _delegate?.onPaste(clipboardData);
+          _notifyListeners(clipboardData);
           return true;
         default:
           print('Unimplemented method ${call.method}');
@@ -35,14 +31,25 @@ class MacPastePlugin {
     }
   }
 
-  void setDelegate(MacPasteDelegate delegate) {
-    _delegate = delegate;
-    print('Delegate set');
+  void _notifyListeners(String clipboardData) {
+    for (final listener in _listeners) {
+      try {
+        listener(clipboardData);
+      } catch (e, stackTrace) {
+        print('Error notifying listener: $e');
+        print('Stack trace: $stackTrace');
+      }
+    }
   }
 
-  void removeDelegate() {
-    _delegate = null;
-    print('Delegate removed');
+  void addListener(void Function(String) listener) {
+    _listeners.add(listener);
+    print('Listener added. Total listeners: ${_listeners.length}');
+  }
+
+  void removeListener(void Function(String) listener) {
+    _listeners.remove(listener);
+    print('Listener removed. Total listeners: ${_listeners.length}');
   }
 
   Future<bool> start() async {
