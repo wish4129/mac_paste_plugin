@@ -29,10 +29,8 @@ public class MacPastePlugin: NSObject, FlutterPlugin {
     
     private func start(result: @escaping FlutterResult) {
         if monitor == nil {
-            NSLog("Starting Cmd+V watcher")
             monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
                 if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "v" {
-                    NSLog("Cmd+V detected")
                     DispatchQueue.main.async {
                         if let clipboardContent = NSPasteboard.general.string(forType: .string) {
                             self?.channel.invokeMethod("onPaste", arguments: clipboardContent) { result in
@@ -55,12 +53,10 @@ public class MacPastePlugin: NSObject, FlutterPlugin {
     
     private func stop(result: @escaping FlutterResult) {
         if let monitor = monitor {
-            NSLog("Stopping Cmd+V watcher")
             NSEvent.removeMonitor(monitor)
             self.monitor = nil
             result(true)
         } else {
-            NSLog("Cmd+V watcher not running")
             result(FlutterError(code: "NOT_RUNNING", message: "Cmd+V watcher is not running", details: nil))
         }
     }
