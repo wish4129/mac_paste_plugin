@@ -38,8 +38,6 @@ public class MacPastePlugin: NSObject, FlutterPlugin {
                             self?.channel.invokeMethod("onPaste", arguments: clipboardContent) { result in
                                 if let error = result as? FlutterError {
                                     NSLog("Error sending Cmd+V event to Flutter: \(error.message ?? "Unknown error")")
-                                } else {
-                                    NSLog("Cmd+V event sent to Flutter successfully")
                                 }
                             }
                         } else {
