@@ -44,7 +44,6 @@ class MacPastePlugin {
 
   void addListener(void Function(String) listener) {
     _listeners.add(listener);
-    print('Listener added. Total listeners: ${_listeners.length}');
   }
 
   void removeListener(void Function(String) listener) {
