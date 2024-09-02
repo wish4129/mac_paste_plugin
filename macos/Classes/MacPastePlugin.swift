@@ -6,9 +6,7 @@ import AppKit
 public class MacPastePlugin: NSObject, FlutterPlugin {
     private var channel: FlutterMethodChannel!
     private var monitor: Any?
-    private var lastChangeCount: Int = 0
-    private var timer: Timer?
-
+    
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "mac_paste_plugin", binaryMessenger: registrar.messenger)
         let instance = MacPastePlugin()
@@ -30,41 +28,36 @@ public class MacPastePlugin: NSObject, FlutterPlugin {
     }
     
     private func start(result: @escaping FlutterResult) {
-        if timer == nil {
-            lastChangeCount = NSPasteboard.general.changeCount
-            timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-                self?.checkPasteboard()
+        if monitor == nil {
+            monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "v" {
+                    DispatchQueue.main.async {
+                        if let clipboardContent = NSPasteboard.general.string(forType: .string) {
+                            self?.channel.invokeMethod("onPaste", arguments: clipboardContent) { result in
+                                if let error = result as? FlutterError {
+                                    NSLog("Error sending Cmd+V event to Flutter: \(error.message ?? "Unknown error")")
+                                }
+                            }
+                        } else {
+                            NSLog("No text content in clipboard")
+                        }
+                    }
+                }
             }
             result(true)
         } else {
-            NSLog("Paste watcher already running")
-            result(FlutterError(code: "ALREADY_RUNNING", message: "Paste watcher is already running", details: nil))
-        }
-    }
-    
-    private func checkPasteboard() {
-        let currentChangeCount = NSPasteboard.general.changeCount
-        if currentChangeCount != lastChangeCount {
-            lastChangeCount = currentChangeCount
-            if let clipboardContent = NSPasteboard.general.string(forType: .string) {
-                self.channel.invokeMethod("onPaste", arguments: clipboardContent) { result in
-                    if let error = result as? FlutterError {
-                        NSLog("Error sending paste event to Flutter: \(error.message ?? "Unknown error")")
-                    }
-                }
-            } else {
-                NSLog("No text content in clipboard")
-            }
+            NSLog("Cmd+V watcher already running")
+            result(FlutterError(code: "ALREADY_RUNNING", message: "Cmd+V watcher is already running", details: nil))
         }
     }
     
     private func stop(result: @escaping FlutterResult) {
-        if let timer = timer {
-            timer.invalidate()
-            self.timer = nil
+        if let monitor = monitor {
+            NSEvent.removeMonitor(monitor)
+            self.monitor = nil
             result(true)
         } else {
-            result(FlutterError(code: "NOT_RUNNING", message: "Paste watcher is not running", details: nil))
+            result(FlutterError(code: "NOT_RUNNING", message: "Cmd+V watcher is not running", details: nil))
         }
     }
     
