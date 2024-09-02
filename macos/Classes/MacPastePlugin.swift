@@ -5,9 +5,9 @@ import AppKit
 
 public class MacPastePlugin: NSObject, FlutterPlugin {
     private var channel: FlutterMethodChannel!
-    private var monitor: Any?
+    private var pasteboardWatcher: Timer?
+    private var keyMonitor: Any?
     private var lastChangeCount: Int = 0
-    private var timer: Timer?
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "mac_paste_plugin", binaryMessenger: registrar.messenger)
@@ -30,11 +30,20 @@ public class MacPastePlugin: NSObject, FlutterPlugin {
     }
     
     private func start(result: @escaping FlutterResult) {
-        if timer == nil {
+        if pasteboardWatcher == nil && keyMonitor == nil {
             lastChangeCount = NSPasteboard.general.changeCount
-            timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            pasteboardWatcher = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
                 self?.checkPasteboard()
             }
+            
+            keyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "v" {
+                    DispatchQueue.main.async {
+                        self?.checkPasteboard()
+                    }
+                }
+            }
+            
             result(true)
         } else {
             NSLog("Paste watcher already running")
@@ -59,13 +68,15 @@ public class MacPastePlugin: NSObject, FlutterPlugin {
     }
     
     private func stop(result: @escaping FlutterResult) {
-        if let timer = timer {
-            timer.invalidate()
-            self.timer = nil
-            result(true)
-        } else {
-            result(FlutterError(code: "NOT_RUNNING", message: "Paste watcher is not running", details: nil))
+        pasteboardWatcher?.invalidate()
+        pasteboardWatcher = nil
+        
+        if let keyMonitor = keyMonitor {
+            NSEvent.removeMonitor(keyMonitor)
+            self.keyMonitor = nil
         }
+        
+        result(true)
     }
     
     private func requestPermission(result: @escaping FlutterResult) {
