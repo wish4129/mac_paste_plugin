@@ -98,6 +98,16 @@ class MacPastePlugin {
       return false;
     }
   }
+
+  Future<void> checkAndRestart() async {
+    final hasPermission = await requestPermission();
+    if (!hasPermission) {
+      // Show alert to user about needing restart
+      // For actual restart you'd need a package like flutter_restartable
+      // This is just the basic logic
+      print('Application needs to be restarted');
+    }
+  }
 }
 
 final macPastePlugin = MacPastePlugin.instance;

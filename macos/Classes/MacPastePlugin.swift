@@ -78,15 +78,30 @@ public class MacPastePlugin: NSObject, FlutterPlugin {
             if response == .alertFirstButtonReturn {
                 NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?InputMonitoring")!)
                 
-                // Check again after returning from System Preferences
                 NotificationCenter.default.addObserver(
                     forName: NSApplication.didBecomeActiveNotification,
                     object: nil,
                     queue: .main
-                ) { _ in
+                ) { [weak self] _ in
                     let isTrusted = AXIsProcessTrusted()
-                    result(isTrusted)
-                    NotificationCenter.default.removeObserver(self)
+                    if isTrusted {
+                        // Permissions granted, no restart needed
+                        result(true)
+                    } else {
+                        // Show restart prompt if still not authorized
+                        let restartAlert = NSAlert()
+                        restartAlert.messageText = "Restart Required"
+                        restartAlert.informativeText = "Please restart the application to apply the new permissions."
+                        restartAlert.addButton(withTitle: "Quit Now")
+                        restartAlert.addButton(withTitle: "Later")
+                        
+                        let restartResponse = restartAlert.runModal()
+                        if restartResponse == .alertFirstButtonReturn {
+                            NSApp.terminate(nil)
+                        }
+                        result(false)
+                    }
+                    NotificationCenter.default.removeObserver(self as Any)
                 }
             } else {
                 result(false)
