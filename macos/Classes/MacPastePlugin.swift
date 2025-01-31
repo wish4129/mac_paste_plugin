@@ -68,18 +68,27 @@ public class MacPastePlugin: NSObject, FlutterPlugin {
         if accessEnabled {
             result(true)
         } else {
-            DispatchQueue.main.async {
-                let alert = NSAlert()
-                alert.messageText = "Permission Required"
-                alert.informativeText = "This app needs permission to monitor key events. Please grant access in System Preferences > Security & Privacy > Privacy > Input Monitoring."
-                alert.addButton(withTitle: "Open System Preferences")
-                alert.addButton(withTitle: "Cancel")
+            let alert = NSAlert()
+            alert.messageText = "Permission Required"
+            alert.informativeText = "This app needs permission to monitor key events. Please grant access in System Preferences > Security & Privacy > Privacy > Input Monitoring."
+            alert.addButton(withTitle: "Open System Preferences")
+            alert.addButton(withTitle: "Cancel")
+            
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?InputMonitoring")!)
                 
-                let response = alert.runModal()
-                if response == .alertFirstButtonReturn {
-                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?InputMonitoring")!)
+                // Check again after returning from System Preferences
+                NotificationCenter.default.addObserver(
+                    forName: NSApplication.didBecomeActiveNotification,
+                    object: nil,
+                    queue: .main
+                ) { _ in
+                    let isTrusted = AXIsProcessTrusted()
+                    result(isTrusted)
+                    NotificationCenter.default.removeObserver(self)
                 }
-                
+            } else {
                 result(false)
             }
         }
