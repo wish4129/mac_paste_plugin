@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 
 class MacPastePlugin {
   static final MacPastePlugin instance = MacPastePlugin._();
@@ -100,32 +99,14 @@ class MacPastePlugin {
     }
   }
 
-  Future<bool> checkPermissionsWithRetry(BuildContext context) async {
-    bool hasPermission = await requestPermission();
+  Future<void> checkAndRestart() async {
+    final hasPermission = await requestPermission();
     if (!hasPermission) {
-      final result = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Permission Required'),
-          content: const Text('The app needs keyboard monitoring permissions to function properly.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Open Settings'),
-            ),
-          ],
-        ),
-      );
-
-      if (result ?? false) {
-        return checkPermissionsWithRetry(context);
-      }
+      // Show alert to user about needing restart
+      // For actual restart you'd need a package like flutter_restartable
+      // This is just the basic logic
+      print('Application needs to be restarted');
     }
-    return hasPermission;
   }
 }
 
